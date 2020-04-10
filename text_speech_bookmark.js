@@ -411,7 +411,7 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
     "show": function () {
       document.body.insertAdjacentHTML('afterbegin', `
 <style class="textSpeechControl">
-.textSpeechControl{font-family:"meiryo"!important;font-size:14px!important;z-index:5000;position:fixed;right:20px;bottom:20px;background-color:rgba(28,28,28,0.9);padding:2px 8px;user-select:none;}
+.textSpeechControl{font-family:"meiryo"!important;font-size:14px!important;z-index:5000;position:fixed;right:20px;bottom:20px;background-color:rgba(28,28,28,0.9);padding:2px 8px;user-select:none!important;}
 .textSpeechControl2{display:inline-block;color:white;cursor:pointer;}
 .textSpeechControl3{letter-spacing:-8px;padding-left:0;padding-right:8px;}
 .textSpeechControlHide{display:none;}
@@ -448,7 +448,7 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
       this.textSpeechControlRateSetting = document.getElementById('textSpeechControlRateSetting');
       this.textSpeechControlRateMenu = document.getElementById('textSpeechControlRateMenu');
       this.textSpeechControlForward = document.getElementById('textSpeechControlForward');
-      this.textSpeechControl = document.getElementById('textSpeechControl');
+      textControl.textSpeechControl = document.getElementById('textSpeechControl');
 
       this.event_listeners.stop_click = this.stop_click.bind(this);
       this.event_listeners.pause_click = this.pause_click.bind(this);
