@@ -1,4 +1,10 @@
 javascript: (() => {/* eslint-disable-line no-unused-labels */
+  /*
+   * TextSpeechBookmarklet
+   * (c) 2020 Query Kuma
+   * Released under the MIT License.
+   */
+  /* cSpell:ignore meiryo,ratemenu,ratesetting,afterbegin,Bookmarklet,Kuma */
   /* 機能
   - テキストを選択してブックマークレット起動すると選択範囲のテキストを読み上げる。
   - テキストを選択しないでブックマークレット起動すると中心部のテキストを選んで読み上げる。
@@ -8,6 +14,7 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
   - 右下に一時停止などのボタンを表示する。
   - ボタンから再生速度を変更できる。
   - 選択範囲を選択してボタンを押すと選択範囲以降のテキストを読み上げる。
+  - 再生位置に自動スクロールできる。
   */
 
   var util = {
@@ -107,6 +114,12 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
       var cur_text_obj_idx = this.text_obj_lst.indexOf(this.cur_text_obj);
       this.text_obj_lst = this.text_obj_lst.slice(cur_text_obj_idx);
     },
+    "get_top_from_index": function (text_node, index) {
+      var r = new Range();
+      r.setStart(text_node, index);
+      r.setEnd(text_node, index + 1);
+      return r.getBoundingClientRect().top;
+    },
     "find_text_obj_from_charIndex": function (charIndex) {
       var sum = 0;
       for (var text_obj of this.text_obj_lst) {
@@ -124,6 +137,23 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
 
         if (sum > charIndex) {
           this.cur_text_obj = text_obj;
+
+          /* eslint-disable-next-line no-use-before-define */
+          if (textSpeechControl.auto_scroll) {
+
+            /* boundary_eventはtext_objの位置indexにある */
+            var index = text_obj.len - sum + charIndex + 1;
+            var top = this.get_top_from_index(text_obj.node, index);
+
+            var lower_limit = document.documentElement.clientHeight * 0.2;
+            var upper_limit = document.documentElement.clientHeight * 0.6;
+
+            if (top < lower_limit || top > upper_limit) {
+              var new_scroll_top = document.documentElement.scrollTop + top - lower_limit;
+              scroll(0, new_scroll_top);
+            }
+          }
+
           return text_obj;
         }
       }
@@ -200,7 +230,7 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
     "get_text_wrapper": function (node, after_sel_range = false) {
       /* 非表示を除いてテキストを得る */
       /* <NOSCRIPT>や<CODE>や<RP>や<RT>を除く */
-      if (["NOSCRIPT", "CODE", "RP", "RT"].indexOf(node.nodeName) >= 0) {
+      if (["NOSCRIPT", "CODE", "RP", "RT", "TITLE"].indexOf(node.nodeName.toUpperCase()) >= 0) {
         return "";
       } else if (node.nodeType === Node.TEXT_NODE) {
         return node.textContent;
@@ -268,6 +298,7 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
     "keepControlOnEnd": false,
     "common_ancestor": null,
     "event_listeners": {},
+    "auto_scroll": false,
     "dom_set_position": function (charIndex) {
       var text_obj = textControl.find_text_obj_from_charIndex(charIndex);
 
@@ -337,6 +368,16 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
       this.textSpeechControlRateMenu.classList.toggle('textSpeechControlHide');
     },
     "ratemenu_click": async function (e) {
+      /* ここにあるのは後から追加したから */
+      if (e.target.id === "textSpeechControlAutoScroll") {
+        this.auto_scroll = !this.auto_scroll;
+        localStorage.auto_scroll = this.auto_scroll;
+        e.target.textContent = this.auto_scroll ? "ON" : "OFF";
+
+        this.textSpeechControlRateMenu.classList.add('textSpeechControlHide');
+        return;
+      }
+
       if (!e.target.classList.contains("textSpeechControl5")) {
         this.ratesetting_click();
         return;
@@ -414,12 +455,13 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
 .textSpeechControl3{letter-spacing:-8px;padding-left:0;padding-right:8px;}
 .textSpeechControlHide{display:none;}
 .textSpeechControl_current{outline:solid red 1px;outline-offset:-1px;}
-.textSpeechControl4{position:absolute;bottom:30px;right:10px;width:80px;text-align:center;background-color:rgba(28,28,28,0.9);color:white;}
+.textSpeechControl4{position:absolute;bottom:30px;right:20px;width:80px;text-align:center;background-color:rgba(28,28,28,0.9);color:white;}
 .textSpeechControl5:hover{background-color:rgba(255,255,255,.1);cursor:pointer;}
+.textSpeechControl6:hover{background-color:rgba(255,255,255,.1);cursor:pointer;}
 .textSpeechControl_currentRate:before{position:absolute;content:'✔';left:5%;}
-.textSpeechControliconWrapper{position:relative;display:inline-block;width:20px;height:20px;padding:2px;box-sizing:border-box;margin-right:0px;margin-bottom:-5px;background-color: black;}
-.textSpeechControliconForward{position:absolute;margin-left:2px;margin-top:1px;width:0;height:0;border-left:7px solid white;border-top:7px solid transparent;border-bottom:7px solid transparent;}
-.textSpeechControliconForward:after{content:'';position:absolute;top:-7px;left:0;border-left:7px solid white;border-top:7px solid transparent;border-bottom:7px solid transparent;}
+.textSpeechControlIconWrapper{position:relative;display:inline-block;width:20px;height:20px;padding:2px;box-sizing:border-box;margin-right:0px;margin-bottom:-5px;background-color: black;}
+.textSpeechControlIconForward{position:absolute;margin-left:2px;margin-top:1px;width:0;height:0;border-left:7px solid white;border-top:7px solid transparent;border-bottom:7px solid transparent;}
+.textSpeechControlIconForward:after{content:'';position:absolute;top:-7px;left:0;border-left:7px solid white;border-top:7px solid transparent;border-bottom:7px solid transparent;}
 }
 </style>
 <span class="textSpeechControl" id="textSpeechControl">
@@ -433,11 +475,13 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
   <div class="textSpeechControl5">1.5</div>
   <div class="textSpeechControl5">1.25</div>
   <div class="textSpeechControl5">1</div>
+  <div>位置調整</div>
+  <div class="textSpeechControl6" id="textSpeechControlAutoScroll">OFF</div>
  </div>
  <span class="textSpeechControl2" id="textSpeechControlStop" title="停止">■</span>
  <span class="textSpeechControl2" id="textSpeechControlPause" title="一時停止"><span class="textSpeechControl3">┃┃</span></span>
  <span class="textSpeechControl2 textSpeechControlHide" id="textSpeechControlPlay" title="再開">&#x25b6;</span>
- <span class="textSpeechControl2" id="textSpeechControlForward" title="選択範囲以降を再生"><div class="textSpeechControliconWrapper"><div class="textSpeechControliconForward"></div></div></span>
+ <span class="textSpeechControl2" id="textSpeechControlForward" title="選択範囲以降を再生"><div class="textSpeechControlIconWrapper"><div class="textSpeechControlIconForward"></div></div></span>
 </span>`);
 
       this.textSpeechControlStop = document.getElementById('textSpeechControlStop');
@@ -447,6 +491,9 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
       this.textSpeechControlRateMenu = document.getElementById('textSpeechControlRateMenu');
       this.textSpeechControlForward = document.getElementById('textSpeechControlForward');
       textControl.textSpeechControl = document.getElementById('textSpeechControl');
+      this.textSpeechControlAutoScroll = document.getElementById('textSpeechControlAutoScroll');
+
+      this.textSpeechControlAutoScroll.textContent = this.auto_scroll ? "ON" : "OFF";
 
       this.event_listeners.stop_click = this.stop_click.bind(this);
       this.event_listeners.pause_click = this.pause_click.bind(this);
@@ -498,6 +545,10 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
       speechSynthesis.speak(utter);
     },
     "main": async function () {
+      if (Object.prototype.hasOwnProperty.call(localStorage, 'auto_scroll')) {
+        this.auto_scroll = JSON.parse(localStorage.auto_scroll);
+      }
+
       var sel = getSelection();
       var sel_exist = sel.rangeCount && sel.toString().length;
 
