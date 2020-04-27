@@ -199,10 +199,8 @@ javascript: (() => {/* eslint-disable-line no-unused-labels */
     },
     "get_text_wrapper": function (node, after_sel_range = false) {
       /* 非表示を除いてテキストを得る */
-      /* <NOSCRIPT>や<CODE>を除く */
-      if (node.nodeName === "NOSCRIPT") {
-        return "";
-      } else if (node.nodeName === "CODE") {
+      /* <NOSCRIPT>や<CODE>や<RP>や<RT>を除く */
+      if (["NOSCRIPT", "CODE", "RP", "RT"].indexOf(node.nodeName) >= 0) {
         return "";
       } else if (node.nodeType === Node.TEXT_NODE) {
         return node.textContent;
